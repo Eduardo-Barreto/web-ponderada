@@ -1,0 +1,32 @@
+# Backend Dependencies
+src/backend/vendor/
+src/backend/main # Compiled binary
+
+# Frontend Dependencies
+src/frontend/node_modules/
+src/frontend/build/
+src/frontend/.env*
+src/frontend/.DS_Store
+
+# Docker artifacts
+docker-compose.override.yml
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+
+# Environment files (if not committed - recommended)
+.env
+*.env.local
+*.env.*.local
+
+# Uploads (if volume mapping isn't used perfectly or for local dev)
+src/backend/uploads/*
+!src/backend/uploads/.gitkeep # Keep the directory structure
+
+# Log files
+*.log
