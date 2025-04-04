@@ -8,8 +8,8 @@ type User struct {
 	ID         int       `json:"id"`
 	Name       string    `json:"name" binding:"required"`
 	Email      string    `json:"email" binding:"required,email"`
-	Password   string    `json:"-" db:"password_hash"`
-	ProfilePic string    `json:"profile_pic"`
+	Password   string    `json:"-" db:"password_hash"` // Alterado para corresponder ao campo password_hash do banco
+	ProfilePic string    `json:"profile_pic"` // Stores filename or path/URL
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 }

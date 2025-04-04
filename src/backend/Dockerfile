@@ -22,11 +22,14 @@ WORKDIR /app
 # Copy the built binary from the builder stage
 COPY --from=builder /app/main /app/main
 
-# Copy uploads directory structure (volume will mount here)
-RUN mkdir -p /app/uploads
+# Create uploads directory and set permissions
+RUN mkdir -p /app/uploads && \
+    chown -R 1000:1000 /app/uploads && \
+    chmod 755 /app/uploads
 
 # Set the user to non-root for security
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN addgroup -S -g 1000 appgroup && \
+    adduser -S -u 1000 -G appgroup appuser
 USER appuser
 
 # Expose the port the application will run on (defined by ENV in docker-compose)
