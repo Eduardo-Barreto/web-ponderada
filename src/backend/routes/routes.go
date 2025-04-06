@@ -66,7 +66,7 @@ func SetupRouter(
 	// --- Product Routes ---
 	productRoutes := apiV1.Group("/products")
 	{
-		// Publicly viewable products
+		// Publicly viewable products 
 		productRoutes.GET("", productHandler.GetProducts)      // GET /api/v1/products
 		productRoutes.GET("/:id", productHandler.GetProduct)   // GET /api/v1/products/:id
 

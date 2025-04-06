@@ -11,16 +11,11 @@ services:
       # Mount init script to create database schema
       - ./src/backend/database/init.sql:/docker-entrypoint-initdb.d/init.sql
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-webappdb}
-      POSTGRES_USER: ${POSTGRES_USER:-user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: webappdb
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
     networks:
       - app-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-webappdb}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   # Backend Service (GoLang/Gin)
   backend:
@@ -30,24 +25,22 @@ services:
     container_name: backend_app
     restart: unless-stopped
     depends_on:
-      db:
-        condition: service_healthy # Wait for DB to be ready
+      - db
     volumes:
       - uploads_data:/app/uploads # Mount volume for image uploads
       # Optional: Mount source code for development (hot-reloading setup needed in Go)
       # - ./src/backend:/app
     environment:
-      GIN_MODE: ${GIN_MODE:-release} # Use 'debug' for development
-      PORT: ${BACKEND_PORT:-8080}
-      DATABASE_URL: "postgres://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-webappdb}?sslmode=disable"
-      JWT_SECRET: a-very-secret-key # CHANGE THIS IN PRODUCTION
+      GIN_MODE: release # Use 'debug' for development
+      PORT: 8000
+      DATABASE_URL: "postgres://user:password@db:5432/webappdb?sslmode=disable"
+      JWT_SECRET: your-secret-key # CHANGE THIS IN PRODUCTION
       # Add other backend env vars as needed (e.g., CORS origins)
       UPLOAD_DIR: /app/uploads # Path inside the container
     networks:
       - app-network
-    # Expose port only within the Docker network, Nginx will handle external access
-    # expose:
-    #   - "${BACKEND_PORT:-8080}"
+    ports:
+      - "8000:8000"
 
   # Web Server / Reverse Proxy (Nginx)
   nginx:
@@ -60,7 +53,7 @@ services:
       # Expose port 80 (HTTP) - Map host port 8000 to container port 80
       - "${NGINX_PORT:-8000}:80"
       # Optional: Expose port 443 (HTTPS) - Requires SSL certificate setup
-      # - "443:443"
+      - "443:443"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
       # Optional: Mount SSL certificates
@@ -68,7 +61,21 @@ services:
     networks:
       - app-network
 
-# Define the dedicated network
+  # Frontend Service
+  frontend:
+    build: 
+      context: ./src/frontend
+    container_name: frontend_app
+    restart: unless-stopped
+    volumes:
+      - ./src/frontend/public:/usr/share/nginx/html
+    ports:
+      - "3000:80"  # Changed from 80:80 to 3000:80
+    networks:
+      - app-network
+    depends_on:
+      - backend
+
 networks:
   app-network:
     driver: bridge

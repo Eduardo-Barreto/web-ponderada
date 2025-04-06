@@ -3,13 +3,12 @@ package handlers
 import (
 	"log"
 	"net/http"
-	"os"
-	"path/filepath" // Use filepath for safety
+	"os" // Use filepath for safety
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Eduardo-Barreto/web-ponderada/backend/repository"
 	"github.com/Eduardo-Barreto/web-ponderada/backend/utils"
+	"github.com/gin-gonic/gin"
 )
 
 type ImageHandler struct {
@@ -25,19 +24,20 @@ func (h *ImageHandler) ServeImage(c *gin.Context) {
 	// Expecting path like /images/users/uuid.jpg or /images/products/uuid.png
 	// We capture the subdirectory and filename together
 	imgPath := c.Param("filepath") // e.g., "users/abc.jpg" or "products/xyz.png"
+	log.Println("imgPath", imgPath)
 
 	// Basic security: Prevent path traversal and absolute paths
-	if strings.Contains(imgPath, "..") || filepath.IsAbs(imgPath) {
+	if strings.Contains(imgPath, "..") {
 		utils.SendError(c, http.StatusBadRequest, "Invalid file path")
 		return
 	}
 
 	// Use the storage repository to get the full system path
 	fullPath := h.FileRepo.GetFilePath(imgPath)
-    if fullPath == "" { // Check if GetFilePath considered it invalid
-        utils.SendError(c, http.StatusBadRequest, "Invalid file path provided")
-        return
-    }
+	if fullPath == "" { // Check if GetFilePath considered it invalid
+		utils.SendError(c, http.StatusBadRequest, "Invalid file path provided")
+		return
+	}
 
 	// Check if the file exists
 	if _, err := os.Stat(fullPath); os.IsNotExist(err) {

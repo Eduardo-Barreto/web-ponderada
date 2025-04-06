@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Produto - Loja de Produtos</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <nav>
+            <div class="container">
+                <h1>Loja de Produtos</h1>
+                <div class="nav-links">
+                    <a href="index.html">Home</a>
+                    <a href="create-product.html">Criar Produto</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container">
+        <div class="form-container">
+            <h2>Criar Novo Produto</h2>
+            <form id="productForm">
+                <div class="form-group">
+                    <label for="description">Descrição</label>
+                    <input type="text" id="description" name="description" required>
+                </div>
+                <div class="form-group">
+                    <label for="value">Valor</label>
+                    <input type="number" id="value" name="value" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="quantity">Quantidade</label>
+                    <input type="number" id="quantity" name="quantity" required>
+                </div>
+                <div class="form-group">
+                    <label for="image">Imagem</label>
+                    <input type="file" id="image" name="image" accept="image/*" required>
+                </div>
+                <div id="form-response"></div>
+                <button type="submit">Criar Produto</button>
+            </form>
+        </div>
+    </main>
+
+    <script type="module">
+        import { productAPI, showMessage } from './utils/api.js';
+
+        document.getElementById('productForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const responseElement = document.getElementById('form-response');
+
+            try {
+                const description = document.getElementById('description').value;
+                const value = parseFloat(document.getElementById('value').value);
+                const quantity = parseInt(document.getElementById('quantity').value);
+                const image = document.getElementById('image').files[0];
+
+                if (!image) {
+                    throw new Error('Por favor, selecione uma imagem');
+                }
+
+                const response = await productAPI.create({
+                    description,
+                    value,
+                    quantity,
+                    image
+                });
+
+                showMessage(responseElement, 'Produto criado com sucesso!', 'success');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1500);
+            } catch (error) {
+                showMessage(responseElement, error.message);
+            }
+        });
+    </script>
+</body>
+
+</html>
