@@ -21,13 +21,13 @@
         <form id="loginForm" class="form-container">
             <div class="form-group">
                 <label for="email">Email:</label>
-                <input type="email" id="email" name="email" required>
+                <input type="email" id="email" name="email" placeholder="seu@email.com" required>
             </div>
             <div class="form-group">
                 <label for="password">Senha:</label>
-                <input type="password" id="password" name="password" required>
+                <input type="password" id="password" name="password" placeholder="••••••••" required>
             </div>
-            <button type="submit">Entrar</button>
+            <button type="submit" id="submitButton">Entrar</button>
         </form>
     </main>
 
@@ -37,12 +37,19 @@
         // Atualiza a navegação imediatamente
         updateNavigation();
 
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        const loginForm = document.getElementById('loginForm');
+        const submitButton = document.getElementById('submitButton');
+        const messageContainer = document.getElementById('message');
+
+        loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const messageContainer = document.getElementById('message');
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+
+            // Desabilita o botão
+            submitButton.disabled = true;
+            messageContainer.innerHTML = '';
 
             try {
                 const response = await authAPI.login(email, password);
@@ -58,13 +65,15 @@
                     showMessage(messageContainer, 'Login realizado com sucesso!', 'success');
                     setTimeout(() => {
                         window.location.href = 'index.html';
-                    }, 1500);
+                    }, 1000);
                 } else {
                     throw new Error('Token não recebido do servidor');
                 }
             } catch (error) {
                 console.error('Login error:', error);
                 showMessage(messageContainer, error.message);
+                // Reabilita o botão em caso de erro
+                submitButton.disabled = false;
             }
         });
     </script>
