@@ -4,51 +4,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Loja de Produtos</title>
+    <title>Login</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
-    <div class="auth-container">
-        <div class="auth-card">
-            <h2>Login</h2>
-            <form id="loginForm">
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" required>
-                </div>
-                <div class="form-group">
-                    <label for="password">Senha</label>
-                    <input type="password" id="password" name="password" required>
-                </div>
-                <div id="auth-response"></div>
-                <button type="submit">Entrar</button>
-            </form>
-            <p class="auth-link">
-                Não tem uma conta? <a href="register.html">Registre-se</a>
-            </p>
-        </div>
-    </div>
+    <header>
+        <h1>Login</h1>
+        <nav>
+            <!-- Navigation will be updated by JavaScript -->
+        </nav>
+    </header>
+
+    <main>
+        <div id="message"></div>
+        <form id="loginForm" class="form-container">
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Senha:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit">Entrar</button>
+        </form>
+    </main>
+
     <script type="module">
-        import { authAPI, showMessage } from './utils/api.js';
+        import { authAPI, showMessage, updateNavigation } from './utils/api.js';
+
+        // Atualiza a navegação imediatamente
+        updateNavigation();
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const responseElement = document.getElementById('auth-response');
+
+            const messageContainer = document.getElementById('message');
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
 
             try {
-                const email = document.getElementById('email').value;
-                const password = document.getElementById('password').value;
-
                 const response = await authAPI.login(email, password);
-                localStorage.setItem('token', response.token);
+                console.log('Login response:', response);
 
-                showMessage(responseElement, 'Login realizado com sucesso! Redirecionando...', 'success');
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 1500);
+                if (response && response.token) {
+                    localStorage.setItem('token', response.token);
+                    console.log('Token stored:', localStorage.getItem('token'));
+
+                    // Atualiza a navegação antes de redirecionar
+                    updateNavigation();
+
+                    showMessage(messageContainer, 'Login realizado com sucesso!', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1500);
+                } else {
+                    throw new Error('Token não recebido do servidor');
+                }
             } catch (error) {
-                showMessage(responseElement, error.message);
+                console.error('Login error:', error);
+                showMessage(messageContainer, error.message);
             }
         });
     </script>

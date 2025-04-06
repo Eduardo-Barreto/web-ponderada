@@ -4,26 +4,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loja de Produtos</title>
+    <title>Produtos</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
     <header>
+        <h1>Produtos</h1>
         <nav>
-            <div class="container">
-                <h1>Loja de Produtos</h1>
-                <div class="nav-links">
-                    <a href="index.html">Home</a>
-                    <a href="create-product.html">Criar Produto</a>
-                </div>
-            </div>
+            <!-- Navigation will be updated by JavaScript -->
         </nav>
     </header>
 
-    <main class="container">
-        <div id="products">
-            <div class="loading">Carregando produtos...</div>
+    <main>
+        <div id="message"></div>
+        <div id="products" class="products-container">
+            <p>Carregando produtos...</p>
         </div>
     </main>
 
@@ -32,43 +28,43 @@
     </div>
 
     <script type="module">
-        import { productAPI } from './utils/api.js';
+        import { productAPI, showMessage, updateNavigation } from './utils/api.js';
+
+        // Atualiza a navegação imediatamente
+        updateNavigation();
+
+        // E também quando a página carregar completamente
+        window.addEventListener('load', () => {
+            console.log('Page loaded, initializing...');
+            updateNavigation();
+            loadProducts();
+        });
 
         async function loadProducts() {
             const productsContainer = document.getElementById('products');
+            const messageContainer = document.getElementById('message');
 
             try {
                 const products = await productAPI.list();
 
                 if (products.length === 0) {
-                    productsContainer.innerHTML = '<div class="message">Nenhum produto encontrado.</div>';
+                    productsContainer.innerHTML = '<p>Nenhum produto encontrado.</p>';
                     return;
                 }
 
                 productsContainer.innerHTML = products.map(product => `
                     <div class="product-card">
-                        <img src="${product.image_url || 'https://cpv.ifsp.edu.br/images/phocagallery/galeria2/thumbs/phoca_thumb_l_image03_grd.png'}" 
-                             alt="${product.description}" 
-                             class="product-image"
-                             onerror="this.src='https://cpv.ifsp.edu.br/images/phocagallery/galeria2/thumbs/phoca_thumb_l_image03_grd.png'">
-                        <div class="product-info">
-                            <h2 class="product-title">${product.description}</h2>
-                            <p class="product-price">R$ ${product.value.toFixed(2)}</p>
-                            <p class="product-quantity">Quantidade: ${product.quantity}</p>
-                        </div>
+                        <img src="${product.image_url || 'placeholder.jpg'}" alt="${product.description}" onerror="this.src='placeholder.jpg'">
+                        <h3>${product.description}</h3>
+                        <p>Valor: R$ ${product.value.toFixed(2)}</p>
+                        <p>Quantidade: ${product.quantity}</p>
                     </div>
                 `).join('');
             } catch (error) {
-                productsContainer.innerHTML = `
-                    <div class="message error">
-                        Erro ao carregar produtos: ${error.message}
-                    </div>
-                `;
+                showMessage(messageContainer, error.message);
+                productsContainer.innerHTML = '<p>Erro ao carregar produtos.</p>';
             }
         }
-
-        // Carrega os produtos quando a página é carregada
-        document.addEventListener('DOMContentLoaded', loadProducts);
     </script>
 </body>
 

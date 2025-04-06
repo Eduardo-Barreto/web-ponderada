@@ -4,7 +4,7 @@ Um sistema web modularizado para gestão de produtos e usuários.
 
 ## Tecnologias Utilizadas
 
-- Frontend: HTML, CSS e HTMX
+- Frontend: HTML, CSS e JS
 - Backend: Go com Gin Framework
 - Banco de Dados: PostgreSQL
 - Servidor Web: Nginx

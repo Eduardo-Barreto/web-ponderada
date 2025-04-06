@@ -4,81 +4,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Criar Produto - Loja de Produtos</title>
+    <title>Criar Produto</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
     <header>
+        <h1>Criar Produto</h1>
         <nav>
-            <div class="container">
-                <h1>Loja de Produtos</h1>
-                <div class="nav-links">
-                    <a href="index.html">Home</a>
-                    <a href="create-product.html">Criar Produto</a>
-                </div>
-            </div>
+            <!-- Navigation will be updated by JavaScript -->
         </nav>
     </header>
 
-    <main class="container">
-        <div class="form-container">
-            <h2>Criar Novo Produto</h2>
-            <form id="productForm">
-                <div class="form-group">
-                    <label for="description">Descrição</label>
-                    <input type="text" id="description" name="description" required>
-                </div>
-                <div class="form-group">
-                    <label for="value">Valor</label>
-                    <input type="number" id="value" name="value" step="0.01" required>
-                </div>
-                <div class="form-group">
-                    <label for="quantity">Quantidade</label>
-                    <input type="number" id="quantity" name="quantity" required>
-                </div>
-                <div class="form-group">
-                    <label for="image">Imagem</label>
-                    <input type="file" id="image" name="image" accept="image/*" required>
-                </div>
-                <div id="form-response"></div>
-                <button type="submit">Criar Produto</button>
-            </form>
-        </div>
+    <main>
+        <div id="message"></div>
+        <form id="productForm" class="form-container">
+            <div class="form-group">
+                <label for="description">Descrição:</label>
+                <input type="text" id="description" name="description" required>
+            </div>
+            <div class="form-group">
+                <label for="value">Valor:</label>
+                <input type="number" id="value" name="value" step="0.01" required>
+            </div>
+            <div class="form-group">
+                <label for="quantity">Quantidade:</label>
+                <input type="number" id="quantity" name="quantity" required>
+            </div>
+            <div class="form-group">
+                <label for="image">Imagem:</label>
+                <input type="file" id="image" name="image" accept="image/*" required>
+            </div>
+            <button type="submit">Criar Produto</button>
+        </form>
     </main>
 
     <script type="module">
-        import { productAPI, showMessage } from './utils/api.js';
+        import { productAPI, showMessage, updateNavigation } from './utils/api.js';
 
-        document.getElementById('productForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const responseElement = document.getElementById('form-response');
+        // Garante que o DOM está completamente carregado
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
 
-            try {
+        function init() {
+            console.log('Initializing create product page...');
+            updateNavigation();
+
+            document.getElementById('productForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const messageContainer = document.getElementById('message');
                 const description = document.getElementById('description').value;
                 const value = parseFloat(document.getElementById('value').value);
                 const quantity = parseInt(document.getElementById('quantity').value);
                 const image = document.getElementById('image').files[0];
 
-                if (!image) {
-                    throw new Error('Por favor, selecione uma imagem');
+                try {
+                    const response = await productAPI.create(description, value, quantity, image);
+                    showMessage(messageContainer, 'Produto criado com sucesso!', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1500);
+                } catch (error) {
+                    showMessage(messageContainer, error.message);
                 }
-
-                const response = await productAPI.create({
-                    description,
-                    value,
-                    quantity,
-                    image
-                });
-
-                showMessage(responseElement, 'Produto criado com sucesso!', 'success');
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 1500);
-            } catch (error) {
-                showMessage(responseElement, error.message);
-            }
-        });
+            });
+        }
     </script>
 </body>
 

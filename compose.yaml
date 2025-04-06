@@ -42,39 +42,19 @@ services:
     ports:
       - "8000:8000"
 
-  # Web Server / Reverse Proxy (Nginx)
-  nginx:
-    image: nginx:1.25-alpine
-    container_name: nginx_proxy
-    restart: unless-stopped
-    depends_on:
-      - backend
-    ports:
-      # Expose port 80 (HTTP) - Map host port 8000 to container port 80
-      - "${NGINX_PORT:-8000}:80"
-      # Optional: Expose port 443 (HTTPS) - Requires SSL certificate setup
-      - "443:443"
-    volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-      # Optional: Mount SSL certificates
-      # - ./path/to/certs:/etc/nginx/certs:ro
-    networks:
-      - app-network
-
   # Frontend Service
   frontend:
     build: 
       context: ./src/frontend
+      dockerfile: Dockerfile
     container_name: frontend_app
     restart: unless-stopped
-    volumes:
-      - ./src/frontend/public:/usr/share/nginx/html
-    ports:
-      - "3000:80"  # Changed from 80:80 to 3000:80
-    networks:
-      - app-network
     depends_on:
       - backend
+    ports:
+      - "8080:80"
+    networks:
+      - app-network
 
 networks:
   app-network:
