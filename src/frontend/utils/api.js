@@ -69,7 +69,6 @@ export const authAPI = {
             }
 
             const data = await response.json();
-            console.log('Login response data:', data);
 
             if (!data.token) {
                 throw new Error('Token não encontrado na resposta');
@@ -131,10 +130,8 @@ export const productAPI = {
 
 // Navigation utility
 export function updateNavigation() {
-    console.log('Starting navigation update...');
 
     const nav = document.querySelector('nav');
-    console.log('Nav element found:', !!nav);
 
     if (!nav) {
         console.error('Navigation element not found in the DOM');
@@ -142,12 +139,9 @@ export function updateNavigation() {
     }
 
     const token = localStorage.getItem('token');
-    console.log('Token exists:', !!token);
-    console.log('Token value:', token);
 
     try {
         if (token) {
-            console.log('User is logged in, showing logged in navigation');
             nav.innerHTML = `
                 <a href="index.html">Home</a>
                 <a href="create-product.html">Criar Produto</a>
@@ -163,15 +157,12 @@ export function updateNavigation() {
                 });
             }
         } else {
-            console.log('User is not logged in, showing guest navigation');
             nav.innerHTML = `
                 <a href="index.html">Home</a>
                 <a href="login.html">Login</a>
                 <a href="register.html">Registrar</a>
             `;
         }
-        console.log('Navigation updated successfully');
-        console.log('Current navigation HTML:', nav.innerHTML);
     } catch (error) {
         console.error('Error updating navigation:', error);
     }

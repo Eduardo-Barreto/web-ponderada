@@ -53,11 +53,9 @@
 
             try {
                 const response = await authAPI.login(email, password);
-                console.log('Login response:', response);
 
                 if (response && response.token) {
                     localStorage.setItem('token', response.token);
-                    console.log('Token stored:', localStorage.getItem('token'));
 
                     // Atualiza a navegação antes de redirecionar
                     updateNavigation();
