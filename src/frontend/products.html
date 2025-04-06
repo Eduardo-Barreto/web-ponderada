@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Produtos</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <h1>Gerenciar Produtos</h1>
+        <nav>
+            <!-- Navigation will be updated by JavaScript -->
+        </nav>
+    </header>
+
+    <main>
+        <div id="message"></div>
+        <div class="products-container">
+            <div class="products-header">
+                <h2>Produtos Cadastrados</h2>
+                <div class="products-actions">
+                    <a href="create-product.html" class="primary-button">Novo Produto</a>
+                    <button id="refreshProducts" class="secondary-button">Atualizar Lista</button>
+                </div>
+            </div>
+            <div id="productsList" class="products-list">
+                <p>Carregando produtos...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal de edição -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Editar Produto</h2>
+                <button class="close-button">&times;</button>
+            </div>
+            <form id="editProductForm" class="form-container">
+                <div class="form-group">
+                    <label for="editName">Descrição:</label>
+                    <input type="text" id="editName" name="description" required>
+                </div>
+                <div class="form-group">
+                    <label for="editPrice">Preço:</label>
+                    <input type="number" id="editPrice" name="value" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="editQuantity">Quantidade:</label>
+                    <input type="number" id="editQuantity" name="quantity" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="editImage">Nova Imagem:</label>
+                    <input type="file" id="editImage" name="image" accept="image/*">
+                </div>
+                <button type="submit" class="primary-button">Salvar Alterações</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { productAPI, showMessage, updateNavigation } from './utils/api.js';
+
+        const API_BASE_URL = 'http://localhost:8000/api/v1';
+
+        // Atualiza a navegação imediatamente
+        updateNavigation();
+
+        const productsList = document.getElementById('productsList');
+        const refreshButton = document.getElementById('refreshProducts');
+        const messageContainer = document.getElementById('message');
+        const editModal = document.getElementById('editModal');
+        const editForm = document.getElementById('editProductForm');
+        const closeButton = document.querySelector('.close-button');
+        let currentProductId = null;
+
+        // Fecha o modal quando clicar no X ou fora do modal
+        closeButton.addEventListener('click', () => editModal.style.display = 'none');
+        window.addEventListener('click', (e) => {
+            if (e.target === editModal) {
+                editModal.style.display = 'none';
+            }
+        });
+
+        async function loadProducts() {
+            try {
+                productsList.innerHTML = '<p>Carregando produtos...</p>';
+                const products = await productAPI.list();
+                productsList.innerHTML = '';
+
+                if (products.length === 0) {
+                    productsList.innerHTML = '<p class="no-items">Nenhum produto cadastrado.</p>';
+                    return;
+                }
+
+                products.forEach(product => {
+                    const imageUrl = product.image ? `${API_BASE_URL}/images/${product.image}` : 'https://via.placeholder.com/300x200?text=Produto';
+                    const productCard = document.createElement('div');
+                    productCard.className = 'product-card';
+                    productCard.innerHTML = `
+                        <img src="${imageUrl}" alt="${product.description || 'Produto sem descrição'}" onerror="this.src='https://via.placeholder.com/300x200?text=Produto'">
+                        <div class="product-info">
+                            <h3>${product.description || 'Produto sem descrição'}</h3>
+                            <span class="price">R$ ${Number(product.value || 0).toFixed(2)}</span>
+                            <span class="quantity">Quantidade: ${product.quantity || 0}</span>
+                        </div>
+                        <div class="product-actions">
+                            <button class="edit-button" data-id="${product.id}">Editar</button>
+                            <button class="delete-button" data-id="${product.id}">Excluir</button>
+                        </div>
+                    `;
+                    productsList.appendChild(productCard);
+                });
+
+                // Adiciona event listeners para os botões
+                document.querySelectorAll('.edit-button').forEach(button => {
+                    button.addEventListener('click', () => editProduct(button.dataset.id));
+                });
+
+                document.querySelectorAll('.delete-button').forEach(button => {
+                    button.addEventListener('click', () => deleteProduct(button.dataset.id));
+                });
+            } catch (error) {
+                showMessage(messageContainer, 'Erro ao carregar produtos: ' + error.message);
+                productsList.innerHTML = '<p class="error">Erro ao carregar produtos. Tente novamente.</p>';
+            }
+        }
+
+        async function editProduct(productId) {
+            try {
+                const product = await productAPI.get(productId);
+                currentProductId = productId;
+
+                // Preenche o formulário com os dados do produto
+                document.getElementById('editName').value = product.description || '';
+                document.getElementById('editPrice').value = product.value || 0;
+                document.getElementById('editQuantity').value = product.quantity || 0;
+
+                // Mostra o modal
+                editModal.style.display = 'block';
+            } catch (error) {
+                showMessage(messageContainer, 'Erro ao carregar produto: ' + error.message);
+            }
+        }
+
+        editForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const submitButton = editForm.querySelector('button[type="submit"]');
+            const originalText = submitButton.textContent;
+            submitButton.textContent = 'Salvando...';
+            submitButton.disabled = true;
+
+            try {
+                const description = document.getElementById('editName').value.trim();
+                const value = parseFloat(document.getElementById('editPrice').value);
+                const quantity = parseInt(document.getElementById('editQuantity').value);
+
+                if (!description) {
+                    throw new Error('A descrição é obrigatória');
+                }
+                if (isNaN(value) || value < 0) {
+                    throw new Error('O preço deve ser um número válido maior ou igual a zero');
+                }
+                if (isNaN(quantity) || quantity < 0) {
+                    throw new Error('A quantidade deve ser um número válido maior ou igual a zero');
+                }
+
+                const formData = new FormData();
+                formData.append('description', description);
+                formData.append('value', value);
+                formData.append('quantity', quantity);
+
+                const imageFile = document.getElementById('editImage').files[0];
+                if (imageFile) {
+                    formData.append('image', imageFile);
+                }
+
+                await productAPI.update(currentProductId, formData);
+                showMessage(messageContainer, 'Produto atualizado com sucesso!', 'success');
+                editModal.style.display = 'none';
+                loadProducts();
+            } catch (error) {
+                showMessage(messageContainer, 'Erro ao atualizar produto: ' + error.message);
+            } finally {
+                submitButton.textContent = originalText;
+                submitButton.disabled = false;
+            }
+        });
+
+        async function deleteProduct(productId) {
+            if (!confirm('Tem certeza que deseja excluir este produto?')) {
+                return;
+            }
+
+            try {
+                await productAPI.delete(productId);
+                showMessage(messageContainer, 'Produto excluído com sucesso!', 'success');
+                loadProducts();
+            } catch (error) {
+                showMessage(messageContainer, 'Erro ao excluir produto: ' + error.message);
+            }
+        }
+
+        // Carrega os produtos quando a página é carregada
+        loadProducts();
+
+        // Atualiza a lista quando o botão é clicado
+        refreshButton.addEventListener('click', () => {
+            refreshButton.textContent = 'Atualizando...';
+            refreshButton.disabled = true;
+            loadProducts().finally(() => {
+                refreshButton.textContent = 'Atualizar Lista';
+                refreshButton.disabled = false;
+            });
+        });
+    </script>
+</body>
+
+</html>

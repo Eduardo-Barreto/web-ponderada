@@ -25,11 +25,11 @@
             </div>
             <div class="form-group">
                 <label for="value">Valor:</label>
-                <input type="number" id="value" name="value" step="0.01" required>
+                <input type="number" id="value" name="value" step="0.01" min="0" required>
             </div>
             <div class="form-group">
                 <label for="quantity">Quantidade:</label>
-                <input type="number" id="quantity" name="quantity" required>
+                <input type="number" id="quantity" name="quantity" min="0" required>
             </div>
             <div class="form-group">
                 <label for="image">Imagem:</label>
@@ -56,19 +56,46 @@
                 e.preventDefault();
 
                 const messageContainer = document.getElementById('message');
-                const description = document.getElementById('description').value;
-                const value = parseFloat(document.getElementById('value').value);
-                const quantity = parseInt(document.getElementById('quantity').value);
-                const image = document.getElementById('image').files[0];
+                const submitButton = e.target.querySelector('button[type="submit"]');
+                const originalText = submitButton.textContent;
+                submitButton.textContent = 'Criando...';
+                submitButton.disabled = true;
 
                 try {
-                    const response = await productAPI.create(description, value, quantity, image);
+                    const description = document.getElementById('description').value.trim();
+                    const value = parseFloat(document.getElementById('value').value);
+                    const quantity = parseInt(document.getElementById('quantity').value);
+                    const image = document.getElementById('image').files[0];
+
+                    if (!description) {
+                        throw new Error('A descrição é obrigatória');
+                    }
+                    if (isNaN(value) || value < 0) {
+                        throw new Error('O valor deve ser um número válido maior ou igual a zero');
+                    }
+                    if (isNaN(quantity) || quantity < 0) {
+                        throw new Error('A quantidade deve ser um número válido maior ou igual a zero');
+                    }
+                    if (!image) {
+                        throw new Error('A imagem é obrigatória');
+                    }
+
+                    const formData = new FormData();
+                    formData.append('description', description);
+                    formData.append('value', value);
+                    formData.append('quantity', quantity);
+                    formData.append('image', image);
+
+                    await productAPI.create(formData);
                     showMessage(messageContainer, 'Produto criado com sucesso!', 'success');
                     setTimeout(() => {
-                        window.location.href = 'index.html';
+                        window.location.href = 'products.html';
                     }, 1500);
                 } catch (error) {
                     showMessage(messageContainer, error.message);
+                } finally {
+                    submitButton.textContent = originalText;
+                    submitButton.disabled = false;
                 }
             });
         }

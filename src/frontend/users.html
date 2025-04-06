@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Usuários</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <header>
+        <h1>Gerenciar Usuários</h1>
+        <nav>
+            <!-- Navigation will be updated by JavaScript -->
+        </nav>
+    </header>
+
+    <main>
+        <div id="message"></div>
+        <div class="users-container">
+            <div class="users-header">
+                <h2>Usuários Cadastrados</h2>
+                <button id="refreshUsers" class="secondary-button">Atualizar Lista</button>
+            </div>
+            <div id="usersList" class="users-list">
+                <!-- Users will be loaded here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal de edição -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Editar Usuário</h2>
+                <button class="close-button">&times;</button>
+            </div>
+            <form id="editUserForm" class="form-container">
+                <div class="form-group">
+                    <label for="editName">Nome:</label>
+                    <input type="text" id="editName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="editEmail">Email:</label>
+                    <input type="email" id="editEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="editPassword">Nova Senha (opcional):</label>
+                    <input type="password" id="editPassword" name="password"
+                        placeholder="Deixe em branco para manter a senha atual">
+                </div>
+                <button type="submit" id="saveEditButton">Salvar Alterações</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { userAPI, showMessage, updateNavigation } from './utils/api.js';
+
+        // Atualiza a navegação imediatamente
+        updateNavigation();
+
+        const usersList = document.getElementById('usersList');
+        const refreshButton = document.getElementById('refreshUsers');
+        const messageContainer = document.getElementById('message');
+        const editModal = document.getElementById('editModal');
+        const editForm = document.getElementById('editUserForm');
+        const closeButton = document.querySelector('.close-button');
+        let currentUserId = null;
+
+        // Fecha o modal quando clicar no X ou fora do modal
+        closeButton.addEventListener('click', () => editModal.style.display = 'none');
+        window.addEventListener('click', (e) => {
+            if (e.target === editModal) {
+                editModal.style.display = 'none';
+            }
+        });
+
+        async function loadUsers() {
+            try {
+                const users = await userAPI.list();
+                usersList.innerHTML = '';
+
+                if (users.length === 0) {
+                    usersList.innerHTML = '<p class="no-items">Nenhum usuário cadastrado.</p>';
+                    return;
+                }
+
+                users.forEach(user => {
+                    const userCard = document.createElement('div');
+                    userCard.className = 'user-card';
+                    userCard.innerHTML = `
+                        <div class="user-info">
+                            <h3>${user.name}</h3>
+                            <p>${user.email}</p>
+                        </div>
+                        <div class="user-actions">
+                            <button class="edit-button" data-id="${user.id}">Editar</button>
+                            <button class="delete-button" data-id="${user.id}">Excluir</button>
+                        </div>
+                    `;
+                    usersList.appendChild(userCard);
+                });
+
+                // Adiciona event listeners para os botões
+                document.querySelectorAll('.edit-button').forEach(button => {
+                    button.addEventListener('click', () => editUser(button.dataset.id));
+                });
+
+                document.querySelectorAll('.delete-button').forEach(button => {
+                    button.addEventListener('click', () => deleteUser(button.dataset.id));
+                });
+            } catch (error) {
+                console.error('Error loading users:', error);
+                showMessage(messageContainer, 'Erro ao carregar usuários: ' + error.message);
+            }
+        }
+
+        async function editUser(userId) {
+            try {
+                const user = await userAPI.get(userId);
+                currentUserId = userId;
+
+                // Preenche o formulário com os dados do usuário
+                document.getElementById('editName').value = user.name;
+                document.getElementById('editEmail').value = user.email;
+                document.getElementById('editPassword').value = '';
+
+                // Mostra o modal
+                editModal.style.display = 'block';
+            } catch (error) {
+                console.error('Error getting user:', error);
+                showMessage(messageContainer, 'Erro ao carregar usuário: ' + error.message);
+            }
+        }
+
+        editForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById('editName').value;
+            const email = document.getElementById('editEmail').value;
+            const password = document.getElementById('editPassword').value;
+
+            try {
+                const updateData = { name, email };
+                if (password) {
+                    updateData.password = password;
+                }
+
+                await userAPI.update(currentUserId, updateData);
+                showMessage(messageContainer, 'Usuário atualizado com sucesso!', 'success');
+                editModal.style.display = 'none';
+                loadUsers();
+            } catch (error) {
+                console.error('Error updating user:', error);
+                showMessage(messageContainer, 'Erro ao atualizar usuário: ' + error.message);
+            }
+        });
+
+        async function deleteUser(userId) {
+            if (!confirm('Tem certeza que deseja excluir este usuário?')) {
+                return;
+            }
+
+            try {
+                await userAPI.delete(userId);
+                showMessage(messageContainer, 'Usuário excluído com sucesso!', 'success');
+                loadUsers();
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                showMessage(messageContainer, 'Erro ao excluir usuário: ' + error.message);
+            }
+        }
+
+        // Carrega os usuários quando a página é carregada
+        loadUsers();
+
+        // Atualiza a lista quando o botão é clicado
+        refreshButton.addEventListener('click', loadUsers);
+    </script>
+</body>
+
+</html>

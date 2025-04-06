@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Produtos</title>
+    <title>Home</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -16,9 +16,9 @@
         </nav>
     </header>
 
-    <main>
+    <main class="home">
         <div id="message"></div>
-        <div id="products" class="products-container">
+        <div class="products-list" id="productsList">
             <p>Carregando produtos...</p>
         </div>
     </main>
@@ -30,40 +30,45 @@
     <script type="module">
         import { productAPI, showMessage, updateNavigation } from './utils/api.js';
 
+        const API_BASE_URL = 'http://localhost:8000/api/v1';
+
         // Atualiza a navegação imediatamente
         updateNavigation();
 
-        // E também quando a página carregar completamente
-        window.addEventListener('load', () => {
-            updateNavigation();
-            loadProducts();
-        });
+        const productsList = document.getElementById('productsList');
+        const messageContainer = document.getElementById('message');
 
         async function loadProducts() {
-            const productsContainer = document.getElementById('products');
-            const messageContainer = document.getElementById('message');
-
             try {
+                productsList.innerHTML = '<p>Carregando produtos...</p>';
                 const products = await productAPI.list();
+                productsList.innerHTML = '';
 
                 if (products.length === 0) {
-                    productsContainer.innerHTML = '<p>Nenhum produto encontrado.</p>';
+                    productsList.innerHTML = '<p class="no-items">Nenhum produto cadastrado.</p>';
                     return;
                 }
 
-                productsContainer.innerHTML = products.map(product => `
-                    <div class="product-card">
-                        <img src="${product.image_url || 'placeholder.jpg'}" alt="${product.description}" onerror="this.src='placeholder.jpg'">
-                        <h3>${product.description}</h3>
-                        <p>Valor: R$ ${product.value.toFixed(2)}</p>
-                        <p>Quantidade: ${product.quantity}</p>
-                    </div>
-                `).join('');
+                products.forEach(product => {
+                    const imageUrl = product.image ? `${API_BASE_URL}/images/${product.image}` : 'https://via.placeholder.com/300x200?text=Produto';
+                    const productCard = document.createElement('div');
+                    productCard.className = 'product-card';
+                    productCard.innerHTML = `
+                        <img src="${imageUrl}" alt="${product.description || 'Produto sem descrição'}" onerror="this.src='https://via.placeholder.com/300x200?text=Produto'">
+                        <h3>${product.description || 'Produto sem descrição'}</h3>
+                        <p class="price">R$ ${Number(product.value || 0).toFixed(2)}</p>
+                        <p class="quantity">Quantidade: ${product.quantity || 0}</p>
+                    `;
+                    productsList.appendChild(productCard);
+                });
             } catch (error) {
-                showMessage(messageContainer, error.message);
-                productsContainer.innerHTML = '<p>Erro ao carregar produtos.</p>';
+                showMessage(messageContainer, 'Erro ao carregar produtos: ' + error.message);
+                productsList.innerHTML = '<p class="error">Erro ao carregar produtos. Tente novamente.</p>';
             }
         }
+
+        // Carrega os produtos quando a página é carregada
+        loadProducts();
     </script>
 </body>
 

@@ -92,79 +92,130 @@ export const authAPI = {
 // Product API functions
 export const productAPI = {
     async list() {
-        const products = await fetchAPI('/products');
-        return products.map(product => ({
-            ...product,
-            image_url: product.image ? `${API_BASE_URL}/images/${product.image}` : null
-        }));
+        const response = await fetch(`${API_BASE_URL}/products`);
+        if (!response.ok) {
+            throw new Error('Erro ao listar produtos');
+        }
+        return response.json();
     },
 
-    async create(description, value, quantity, image) {
-        const formData = new FormData();
-        formData.append('description', description);
-        formData.append('value', value);
-        formData.append('quantity', quantity);
-        formData.append('image', image);
+    async get(id) {
+        const response = await fetch(`${API_BASE_URL}/products/${id}`);
+        if (!response.ok) {
+            throw new Error('Erro ao buscar produto');
+        }
+        return response.json();
+    },
 
-        const token = localStorage.getItem('token');
+    async create(formData) {
         const response = await fetch(`${API_BASE_URL}/products`, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
             body: formData,
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Erro ao criar produto');
+        }
+        return response.json();
+    },
+
+    async update(id, formData) {
+        const response = await fetch(`${API_BASE_URL}/products/${id}`, {
+            method: 'PUT',
+            body: formData,
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
         });
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.message || 'Erro ao criar produto');
+            throw new Error(error.message || 'Erro ao atualizar produto');
         }
+        return response.json();
+    },
 
-        const data = await response.json();
-        return {
-            ...data,
-            image_url: data.image ? `${API_BASE_URL}/images/${data.image}` : null
-        };
+    async delete(id) {
+        const response = await fetch(`${API_BASE_URL}/products/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Erro ao excluir produto');
+        }
+    },
+
+    getImage(imageName) {
+        return `${API_BASE_URL}/images/${imageName}`;
     }
+};
+
+// User API functions
+export const userAPI = {
+    async list() {
+        return fetchAPI('/users', {
+            method: 'GET',
+        });
+    },
+
+    async get(id) {
+        return fetchAPI(`/users/${id}`, {
+            method: 'GET',
+        });
+    },
+
+    async update(id, data) {
+        return fetchAPI(`/users/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
+    },
+
+    async delete(id) {
+        return fetchAPI(`/users/${id}`, {
+            method: 'DELETE',
+        });
+    },
 };
 
 // Navigation utility
 export function updateNavigation() {
-
     const nav = document.querySelector('nav');
-
-    if (!nav) {
-        console.error('Navigation element not found in the DOM');
-        return;
-    }
+    if (!nav) return;
 
     const token = localStorage.getItem('token');
+    let navHTML = '';
 
-    try {
-        if (token) {
-            nav.innerHTML = `
-                <a href="index.html">Home</a>
-                <a href="create-product.html">Criar Produto</a>
-                <a href="#" id="logout">Logout</a>
-            `;
+    if (token) {
+        navHTML = `
+            <a href="index.html">Home</a>
+            <a href="products.html">Gerenciar Produtos</a>
+            <a href="users.html">Gerenciar Usuários</a>
+            <button id="logoutButton">Sair</button>
+        `;
+    } else {
+        navHTML = `
+            <a href="index.html">Home</a>
+            <a href="login.html">Entrar</a>
+            <a href="register.html">Cadastrar</a>
+        `;
+    }
 
-            const logoutBtn = document.getElementById('logout');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    localStorage.removeItem('token');
-                    window.location.href = 'index.html';
-                });
-            }
-        } else {
-            nav.innerHTML = `
-                <a href="index.html">Home</a>
-                <a href="login.html">Login</a>
-                <a href="register.html">Registrar</a>
-            `;
-        }
-    } catch (error) {
-        console.error('Error updating navigation:', error);
+    nav.innerHTML = navHTML;
+
+    // Adiciona o event listener para o botão de logout
+    const logoutButton = document.getElementById('logoutButton');
+    if (logoutButton) {
+        logoutButton.addEventListener('click', () => {
+            localStorage.removeItem('token');
+            window.location.href = 'index.html';
+        });
     }
 }
 
